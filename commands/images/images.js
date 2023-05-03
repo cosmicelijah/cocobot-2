@@ -2,11 +2,12 @@ const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder } = require('discor
 const fs = require('fs');
 
 /**
- * Get random Coconut images up to specified value, default 1
+ * Get random images up to specified value in a specified category
  * 
  * @param `num`: number of images, default 1
+ * @param `category`: the image category, default 'coconut'
  * 
- * @returns array of images
+ * @returns array of images or empty array
  */
 function getRandomImages(num=1, category='coconut') {
   const max = 103;
@@ -40,6 +41,9 @@ function getRandomImages(num=1, category='coconut') {
   return images;
 }
 
+/**
+ * Command to display up to 10 images of a given category
+ */
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('image')
@@ -57,6 +61,7 @@ module.exports = {
         .setRequired(false)
     ),
   async execute(interaction) {
+
     /**
      * Defer message so that the window is increased from 3 seconds to 15 minutes
      */
