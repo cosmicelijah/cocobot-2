@@ -1,5 +1,32 @@
 const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder } = require('discord.js');
 const fs = require('fs');
+const getData = require('../../database/connect.js');
+
+let imageData = [];
+
+async function validateCategories(category) {
+  let query = `SELECT name FROM Category`;
+
+  try {
+    const rawResults = await getData(query);
+
+    let results = [];
+
+    for (let i = 0; i < rawResults.length; i++) {
+      results.push(rawResults[i][0]);
+    }
+
+    let valid = [];
+
+    for (let i = 0; i < category.length; i++) {
+      if (results.includes(category[i])) valid.push(category[i]);
+    }
+
+    return valid;
+  } catch (err) {
+    throw err;
+  }
+}
 
 /**
  * Get random images up to specified value in a specified category
@@ -9,36 +36,39 @@ const fs = require('fs');
  * 
  * @returns array of images or empty array
  */
-function getRandomImages(num=1, category='coconut') {
-  const max = 103;
+async function getRandomImages(num=1, category='[coconut]') {
 
-  if (num == 0) {
+  if (num == 0 || category.length == 0) {
     return [];
   }
 
-  const fileMap = new Map();
+  const valid = await validateCategories(category);
 
-  let files = [];
+  if (valid.length == 0) {
+    return [];
+  }
+
+  let query = `SELECT HasCategory.catName AS cat, Image.path AS path FROM HasCategory JOIN Image ON HasCategory.imageName = Image.path WHERE catName = '${category[0]}'`;
+
+  for (let i = 1; i < category.length; i++) {
+    query += ` OR catName = '${category[i]}'`;
+  }
 
   try {
-    files = fs.readdirSync(`./pictures/${category}`);
-  } catch {
-    return [];
+    const results = await getData(query);
+    const images = [];
+    const numImages = results.length;
+  
+    for (let i = 0; i < num; i++) {
+      let r = Math.ceil(Math.random() * numImages);
+  
+      images.push(`${results[r][0]}/${results[r][1]}`);
+    }
+  
+    return images;
+  } catch (error) {
+    throw error;
   }
-
-  files.filter(f => {
-    fileMap.set(parseInt(f.split('.').shift()), f);
-  });
-
-  const images = [];
-
-  for (let i = 0; i < num; i++) {
-    let r = Math.ceil(Math.random() * (max - 1));
-
-    images.push(fileMap.get(r));
-  }
-
-  return images;
 }
 
 /**
@@ -73,12 +103,21 @@ module.exports = {
     const min = 0;
     const max = 10;
     const defaultImage = new AttachmentBuilder('./pictures/0.png');
+    const errorImage = new AttachmentBuilder('./pictures/error.jpg');
 
     /**
      * Handle arguments
      */
-    const category = interaction.options.getString('category') ?? 'coconut';
+    const categoryString = interaction.options.getString('category') ?? 'coconut';
     const numString = interaction.options.getString('number') ?? '1';
+
+    let category = categoryString.split(',');
+
+    for (i = 0; i < category.length; i++) {
+      category[i] = category[i].trim();
+    }
+
+    // console.log(category);
 
     let numVal = parseInt(numString);
 
@@ -96,39 +135,42 @@ module.exports = {
      * Create and send empty embed if num=0
      */
 
-    if (num == 0) {
-      await interaction.editReply({
-        embeds: [embed],
-      });
-
-      return;
-    }
-
+    
     /**
      * More fields for image processing
-     */
-    let embeds = [];
-    let images = [];
-    let imageNames = getRandomImages(num, category);
-
-    /**
-     * Default embed for if the requested category does not exist
-     */
-    if (imageNames.length == 0) {
+    */
+   let embeds = [];
+   let images = [];
+   let imageNames = await getRandomImages(num, category);
+   
+   console.log(imageNames);
+   
+   /**
+    * Default embed for if the requested category does not exist
+   */
+    if (num == 0) {
       const embed = new EmbedBuilder()
-        .setTitle('Category does not exist')
-        .setImage(`attachment://0.png`);
+        .setTitle(`Error: please input an integer value from 1 to 10`)
+        .setImage(`attachment://error.jpg`);
+      embeds.push(embed);
+      images.push(errorImage);
+
+    } else if (imageNames.length == 0) {
+      const embed = new EmbedBuilder()
+        .setTitle(`Sorry, it looks like that category doesn't exist`)
+        .setImage(`attachment://error.jpg`);
 
       embeds.push(embed);
-      images.push(defaultImage);
+      images.push(errorImage);
 
     } else {
       for (i = 0; i < num; i++) {
-        const image = new AttachmentBuilder(`./pictures/${category}/${imageNames[i]}`);
+        const image = new AttachmentBuilder(`../../Pictures/dbImages/${imageNames[i]}`);
   
         const embed = new EmbedBuilder()
           .setURL('https://cosmicelijah.com')
-          .setImage(`attachment://${imageNames[i]}`);
+          // .setTitle(`${category}`)
+          .setImage(`attachment://${imageNames[i].split('/').pop()}`);
   
         embeds.push(embed);
         images.push(image);

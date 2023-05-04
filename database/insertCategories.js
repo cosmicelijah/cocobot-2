@@ -7,7 +7,7 @@ function addCategories(categories) {
     if (err) throw err;
   });
 
-  connection.query(`DELETE FROM Category`, (err, results) => {
+  connection.query(`TRUNCATE TABLE Category`, (err, results) => {
     if (err) throw err;
   });
 
@@ -15,9 +15,6 @@ function addCategories(categories) {
     if (err) throw err;
     console.log(`Added ${results.affectedRows} categories`);
   });
-
-  connection.end();
-
 }
 
 addCategories(
