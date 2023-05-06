@@ -1,8 +1,6 @@
 const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder } = require('discord.js');
 const fs = require('fs');
-const getData = require('../../database/connect.js');
-
-let imageData = [];
+const { getData } = require('../../database/connect.js');
 
 async function validateCategories(category) {
   let query = `SELECT name FROM Category`;
@@ -36,7 +34,7 @@ async function validateCategories(category) {
  * 
  * @returns array of images or empty array
  */
-async function getRandomImages(num=1, category='[coconut]') {
+async function getRandomImages(num = 1, category = '[coconut]', isNsfw = false) {
 
   if (num == 0 || category.length == 0) {
     return [];
@@ -48,23 +46,32 @@ async function getRandomImages(num=1, category='[coconut]') {
     return [];
   }
 
-  let query = `SELECT HasCategory.catName AS cat, Image.path AS path FROM HasCategory JOIN Image ON HasCategory.imageName = Image.path WHERE catName = '${category[0]}'`;
+  let query = `SELECT HasCategory.catName AS cat, Image.path AS path, Image.isNSFW AS nsfw FROM HasCategory JOIN Image ON HasCategory.imageName = path WHERE catName = '${category[0]}'`;
 
   for (let i = 1; i < category.length; i++) {
     query += ` OR catName = '${category[i]}'`;
   }
 
+  if (!isNsfw) {
+    query += ' AND isNSFW = false';
+  }
+
+  // console.log(query);
+
   try {
     const results = await getData(query);
     const images = [];
     const numImages = results.length;
-  
+
+    // console.log(results);
+    // console.log(numImages);
+
     for (let i = 0; i < num; i++) {
-      let r = Math.ceil(Math.random() * numImages);
-  
+      let r = Math.floor(Math.random() * numImages);
+
       images.push(`${results[r][0]}/${results[r][1]}`);
     }
-  
+
     return images;
   } catch (error) {
     throw error;
@@ -75,31 +82,37 @@ async function getRandomImages(num=1, category='[coconut]') {
  * Command to display up to 10 images of a given category
  */
 module.exports = {
+  cooldown: 10,
   data: new SlashCommandBuilder()
     .setName('image')
     .setDescription('Coconut images <3')
-    .addStringOption((option) => 
+    .addStringOption((option) =>
       option
         .setName('category')
-        .setDescription('The category of images to display (coconut, other)')
+        .setDescription('The category of images to display')
         .setRequired(false)
     )
-    .addStringOption((option) => 
+    .addStringOption((option) =>
       option
         .setName('number')
         .setDescription('The number of images to display')
+        .setRequired(false)
+    ).addBooleanOption((option) =>
+      option
+        .setName('nsfw')
+        .setDescription('Wether or not to include NSFW images')
+        .setRequired(false)
+    ).addBooleanOption((option) =>
+      option
+        .setName('hidden')
+        .setDescription('Wether or not to send secretly')
         .setRequired(false)
     ),
   async execute(interaction) {
 
     /**
-     * Defer message so that the window is increased from 3 seconds to 15 minutes
-     */
-    await interaction.deferReply();
-
-    /**
      * Declare constants
-     */
+    */
     const min = 0;
     const max = 10;
     const defaultImage = new AttachmentBuilder('./pictures/0.png');
@@ -107,17 +120,24 @@ module.exports = {
 
     /**
      * Handle arguments
-     */
+    */
     const categoryString = interaction.options.getString('category') ?? 'coconut';
     const numString = interaction.options.getString('number') ?? '1';
+    const isNsfw = interaction.options.getBoolean('nsfw') ?? false;
+    const isHidden = interaction.options.getBoolean('hidden') ?? false;
+
+    console.log(`User: ${interaction.user.username} requested\n\tcategories: ${categoryString}\n\tnumberImages: ${numString}\n\tincludedNsfw: ${isNsfw}\n\tephemeral: ${isHidden}`);
+
+    /**
+     * Defer message so that the window is increased from 3 seconds to 15 minutes
+    */
+    await interaction.deferReply({ephemeral: isHidden});
 
     let category = categoryString.split(',');
 
     for (i = 0; i < category.length; i++) {
       category[i] = category[i].trim();
     }
-
-    // console.log(category);
 
     let numVal = parseInt(numString);
 
@@ -132,22 +152,18 @@ module.exports = {
     const num = numVal;
 
     /**
-     * Create and send empty embed if num=0
-     */
-
-    
-    /**
      * More fields for image processing
     */
-   let embeds = [];
-   let images = [];
-   let imageNames = await getRandomImages(num, category);
-   
-   console.log(imageNames);
-   
-   /**
-    * Default embed for if the requested category does not exist
-   */
+    let embeds = [];
+    let images = [];
+    let imageNames = await getRandomImages(num, category, isNsfw);
+
+    console.log(imageNames);
+
+    /**
+     * Default embed for if the requested category does not exist
+    */
+
     if (num == 0) {
       const embed = new EmbedBuilder()
         .setTitle(`Error: please input an integer value from 1 to 10`)
@@ -166,16 +182,15 @@ module.exports = {
     } else {
       for (i = 0; i < num; i++) {
         const image = new AttachmentBuilder(`../../Pictures/dbImages/${imageNames[i]}`);
-  
+
         const embed = new EmbedBuilder()
           .setURL('https://cosmicelijah.com')
-          // .setTitle(`${category}`)
           .setImage(`attachment://${imageNames[i].split('/').pop()}`);
-  
+
         embeds.push(embed);
         images.push(image);
       }
-  
+
     }
 
     /**

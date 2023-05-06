@@ -1,19 +1,35 @@
-const { connection } = require('./connect');
+const mysql = require('mysql');
+const {getConnection} = require('./connect');
 const fs = require('fs');
 
-function addImages(images) {
-  connection.query(`USE coconutimages`, (err, results) => {
-    if (err) throw err;
+async function addImages(images) {
+  const table = "Image";
+  const query = "INSERT INTO Image (path, isNsfw) VALUES ?"
+  const conn = await getConnection();
+
+  conn.query(`TRUNCATE TABLE ${table}`, (err, rows) => {
+
+    if (err) {
+      console.error(err);
+      return;
+    }
+
+    console.log(`Truncated ${table}`);
   });
 
-  connection.query(`TRUNCATE TABLE Image`, (err, results) => {
-    if (err) throw err;
-  });
+  console.log(images);
 
-  connection.query(`INSERT INTO Image (path) VALUES ?`, [images], (err, results) => {
-    if (err) throw err;
-    console.log(`Added ${results.affectedRows} categories`);
+  conn.query("INSERT INTO Image (path, isNsfw) VALUES ?", [images], (err, rows) => {
+    
+    if (err) {
+      console.error(err);
+      return;
+    }
+    
+    console.log(`Affected ${rows.affectedRows}`);
   });
+  
+  conn.release();
 }
 
 function addImgToCat(data) {
@@ -37,17 +53,40 @@ let folders = fs.readdirSync(path).filter(f => {
   return fs.statSync(`${path}/${f}`).isDirectory();
 });
 
-console.log(folders);
+// console.log(folders);
 let catToImg = [];
 let images = new Set();
 
 for (let i = 0; i < folders.length; i++) {
   const catPath = `${path}/${folders[i]}`;
 
-  let files = fs.readdirSync(catPath);
+  let files = fs.readdirSync(catPath).filter(f => {
+    return !fs.statSync(`${catPath}/${f}`).isDirectory();
+  });
+
+  // console.log(files);
 
   for (let j = 0; j < files.length; j++) {
-    images.add(files[j]);
+    images.add([files[j], false]);
+  }
+
+  for (let j = 0; j < files.length; j++) {
+    const pair = [`${folders[i]}`, `${files[j]}`];
+    catToImg.push(pair);
+  }
+}
+
+for (let i = 0; i < folders.length; i++) {
+  const catPath = `${path}/${folders[i]}/nsfw`;
+
+  let files = fs.readdirSync(catPath).filter(f => {
+    return !fs.statSync(`${catPath}/${f}`).isDirectory();
+  });
+
+  // console.log(files);
+
+  for (let j = 0; j < files.length; j++) {
+    images.add([files[j], true]);
   }
 
   for (let j = 0; j < files.length; j++) {
@@ -59,7 +98,7 @@ for (let i = 0; i < folders.length; i++) {
 let imagesDB = [];
 
 for (const i of images) {
-  imagesDB.push([i]);
+  imagesDB.push(i);
 }
 
 // console.log(imagesDB);
@@ -69,4 +108,4 @@ for (const i of images) {
 // console.log(catToImg.length);
 
 addImages(imagesDB);
-addImgToCat(catToImg);
+// addImgToCat(catToImg);

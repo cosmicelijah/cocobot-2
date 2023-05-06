@@ -14,20 +14,30 @@ async function getData(query) {
       if (err) {
         return callback(err);
       }
-  
+
       conn.query(query, (err, rows) => {
         conn.release();
-  
+
         if (err) {
           return reject(err);
         }
-  
+
         const result = rows.map(row => Object.values(row));
         resolve(result);
       });
     });
 
   })
-} 
+}
 
-module.exports = getData;
+async function getConnection() {
+  return new Promise((resolve, reject) => {
+    pool.getConnection((err, conn) => {
+      if (err) reject(err);
+      resolve(conn);
+    })
+  });
+}
+
+
+module.exports = { getData, getConnection };
