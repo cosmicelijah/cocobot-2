@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -11,13 +11,23 @@ module.exports = {
         .setRequired(true)
     ),
   async execute(interaction) {
-    // if (interaction.user.id != '451196379726086156') {
-    //   return;
-    // }
+    if (interaction.user.id != '451196379726086156') {
+      const madImage = new AttachmentBuilder('./pictures/mad.png');
+
+      const incorrectUserEmbed = new EmbedBuilder()
+      .setTitle(`User ${interaction.user.username} is not in the sudoers file. This incident has been reported.`)
+      .setImage('attachment://mad.png')
+      .setFooter({ text: "Just kidding, I still love you <3" });
+
+      await interaction.reply({embeds: [incorrectUserEmbed], files: [madImage]});
+      return;
+    }
 
     const commandName = interaction.options.getString('command', true).toLowerCase();
     const command = interaction.client.commands.get(commandName);
     const commandPath = interaction.client.commandPaths.get(commandName);
+    
+    console.log(`\nReloading ${commandName}\n\n`);
 
     if (!command) {
       return interaction.reply(`There is no command with name \`${commandName}\`!`);
@@ -34,6 +44,5 @@ module.exports = {
       console.error(error);
       await interaction.reply(`\`\`\`js\n${error.message}\`\`\``);
     }
-
   },
 }

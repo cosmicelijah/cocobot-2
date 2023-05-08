@@ -1,5 +1,4 @@
 const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder } = require('discord.js');
-const fs = require('fs');
 const { getData } = require('../../database/connect.js');
 
 async function validateCategories(category) {
@@ -69,7 +68,7 @@ async function getRandomImages(num = 1, category = '[coconut]', isNsfw = false) 
     for (let i = 0; i < num; i++) {
       let r = Math.floor(Math.random() * numImages);
 
-      images.push(`${results[r][0]}/${results[r][1]}`);
+      images.push(`${results[r][1]}`);
     }
 
     return images;
@@ -114,7 +113,7 @@ module.exports = {
      * Declare constants
     */
     const min = 0;
-    const max = 10;
+    const max = 4;
     const defaultImage = new AttachmentBuilder('./pictures/0.png');
     const errorImage = new AttachmentBuilder('./pictures/error.jpg');
 

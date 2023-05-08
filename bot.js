@@ -3,6 +3,7 @@ const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits, EmbedBuilder, Partials } = require('discord.js');
 const { token } = require('./config.json');
 
+
 const foldersPath = path.join(__dirname, 'commands');
 const commandFolders = fs.readdirSync(foldersPath);
 const client = new Client({
@@ -24,7 +25,6 @@ client.cooldowns = new Collection();
 /**
  * Command Handler
  */
-
 for (const folder of commandFolders) {
   const commandsPath = path.join(foldersPath, folder);
   const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith('.js'));
@@ -45,13 +45,12 @@ for (const folder of commandFolders) {
 /**
  * Log In Success
  */
-
 client.once(Events.ClientReady, () => {
   console.log(`Ready\nLogged in as ${client.user.tag}`);
   client.user.setPresence({
     status: 'online',
     activities: [{
-      name: 'with Coconut',
+      name: 'use `/help` to get started!',
       type: 0
     }],
   });
@@ -63,8 +62,6 @@ client.once(Events.ClientReady, () => {
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
-
-  // console.log(interaction);
 
   const command = interaction.client.commands.get(interaction.commandName);
   const { cooldowns } = client;
@@ -96,9 +93,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
 
-  timestamps.set(interaction.user.id, now);
-  setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
-
+  if (interaction.user.id != '451196379726086156') {
+    timestamps.set(interaction.user.id, now);
+    setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
+  }
+  
   try {
     await command.execute(interaction);
 

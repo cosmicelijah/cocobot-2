@@ -1,10 +1,24 @@
-const mysql = require('mysql');
+const mysql = require('mysql2');
 const {getConnection} = require('./connect');
 const fs = require('fs');
 
+async function addCategories(categories) {
+  const conn = await getConnection();
+  
+  conn.query(`TRUNCATE TABLE category`, (err, results) => {
+    if (err) throw err;
+  });
+
+  conn.query(`INSERT INTO category (name) VALUES ?`, [categories], (err, results) => {
+    if (err) throw err;
+    console.log(`Added ${results.affectedRows} categories`);
+  });
+
+  conn.release();
+}
+
 async function addImages(images) {
-  const table = "Image";
-  const query = "INSERT INTO Image (path, isNsfw) VALUES ?"
+  const table = "image";
   const conn = await getConnection();
 
   conn.query(`TRUNCATE TABLE ${table}`, (err, rows) => {
@@ -19,35 +33,34 @@ async function addImages(images) {
 
   console.log(images);
 
-  conn.query("INSERT INTO Image (path, isNsfw) VALUES ?", [images], (err, rows) => {
-    
-    if (err) {
-      console.error(err);
-      return;
-    }
-    
-    console.log(`Affected ${rows.affectedRows}`);
-  });
-  
+  try {
+    conn.query("INSERT INTO image (path, isNsfw) VALUES ? ON DUPLICATE KEY UPDATE path=path", [images], (err, rows) => {
+      
+      if (err) throw err;
+      
+      console.log(`Added ${rows.affectedRows} images`);
+    });  
+  } catch (error) {
+    console.log(error);
+  }
+
   conn.release();
 }
 
-function addImgToCat(data) {
-  connection.query(`USE coconutimages`, (err, results) => {
+async function addImgToCat(data) {
+  const conn = await getConnection();
+
+  conn.query(`TRUNCATE TABLE HasCategory`, (err, results) => {
     if (err) throw err;
   });
 
-  connection.query(`TRUNCATE TABLE HasCategory`, (err, results) => {
+  conn.query(`INSERT INTO HasCategory (catName, imageName) VALUES ?`, [data], (err, results) => {
     if (err) throw err;
-  });
-
-  connection.query(`INSERT INTO HasCategory (catName, imageName) VALUES ?`, [data], (err, results) => {
-    if (err) throw err;
-    console.log(`Added ${results.affectedRows} images`);
+    console.log(`Added ${results.affectedRows} categories to images`);
   });
 }
 
-const path = "../../Pictures/dbImages/"
+const path = "../../Pictures/dbImagesReal/"
 
 let folders = fs.readdirSync(path).filter(f => {
   return fs.statSync(`${path}/${f}`).isDirectory();
@@ -102,10 +115,24 @@ for (const i of images) {
 }
 
 // console.log(imagesDB);
+// console.log(catToImg);
 
 
 // console.log(images.size);
 // console.log(catToImg.length);
 
+// addCategories(
+//   [
+//     ['coconut'],
+//     ['maple'],
+//     ['azuki'],
+//     ['cinnamon'],
+//     ['vanilla'],
+//     ['chocola'],
+//     ['fraise'],
+//     ['other']
+//   ]
+// );
+
 addImages(imagesDB);
-// addImgToCat(catToImg);
+addImgToCat(catToImg);
