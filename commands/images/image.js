@@ -1,7 +1,13 @@
 const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder } = require('discord.js');
 const { getData } = require('../../database/connect.js');
 
-async function validateCategories(category) {
+/**
+ * Validates the input categories against the available categories in the database
+ * 
+ * @param {string[]} category 
+ * @returns 
+ */
+async function _validateCategories(category) {
   let query = `SELECT name FROM Category`;
 
   try {
@@ -26,12 +32,11 @@ async function validateCategories(category) {
 }
 
 /**
- * Get random images up to specified value in a specified category
  * 
- * @param `num`: number of images, default 1
- * @param `category`: the image category, default 'coconut'
- * 
- * @returns array of images or empty array
+ * @param {num} num number of images to get
+ * @param {string[]} category array of strings containing all of the categories requested
+ * @param {boolean} isNsfw whether the requested images should include nsfw images or not
+ * @returns an array of strings of the image path names to get
  */
 async function getRandomImages(num = 1, category = '[coconut]', isNsfw = false) {
 
@@ -39,7 +44,7 @@ async function getRandomImages(num = 1, category = '[coconut]', isNsfw = false) 
     return [];
   }
 
-  const valid = await validateCategories(category);
+  const valid = await _validateCategories(category);
 
   if (valid.length == 0) {
     return [];
@@ -55,15 +60,10 @@ async function getRandomImages(num = 1, category = '[coconut]', isNsfw = false) 
     query += ' AND isNSFW = false';
   }
 
-  // console.log(query);
-
   try {
     const results = await getData(query);
     const images = [];
     const numImages = results.length;
-
-    // console.log(results);
-    // console.log(numImages);
 
     for (let i = 0; i < num; i++) {
       let r = Math.floor(Math.random() * numImages);
@@ -78,7 +78,12 @@ async function getRandomImages(num = 1, category = '[coconut]', isNsfw = false) 
 }
 
 /**
- * Command to display up to 10 images of a given category
+ * Command to display up to 4 images of a given category
+ * 
+ * @param {string} category 
+ * @param {num} number
+ * @param {nsfw} boolean
+ * @param {hidden} boolean
  */
 module.exports = {
   cooldown: 10,
@@ -91,7 +96,7 @@ module.exports = {
         .setDescription('The category of images to display')
         .setRequired(false)
     )
-    .addStringOption((option) =>
+    .addIntegerOption((option) =>
       option
         .setName('number')
         .setDescription('The number of images to display')
@@ -121,34 +126,33 @@ module.exports = {
      * Handle arguments
     */
     const categoryString = interaction.options.getString('category') ?? 'coconut';
-    const numString = interaction.options.getString('number') ?? '1';
+    const num = interaction.options.getInteger('number') ?? 1;
     const isNsfw = interaction.options.getBoolean('nsfw') ?? false;
     const isHidden = interaction.options.getBoolean('hidden') ?? false;
 
-    console.log(`User: ${interaction.user.username} requested\n\tcategories: ${categoryString}\n\tnumberImages: ${numString}\n\tincludedNsfw: ${isNsfw}\n\tephemeral: ${isHidden}`);
+    console.log(`User: ${interaction.user.username} requested\n\tcategories: ${categoryString}\n\tnumberImages: ${num}\n\tincludedNsfw: ${isNsfw}\n\tephemeral: ${isHidden}`);
 
     /**
      * Defer message so that the window is increased from 3 seconds to 15 minutes
     */
     await interaction.deferReply({ephemeral: isHidden});
 
+    /**
+     * Process category 
+     */
     let category = categoryString.split(',');
 
     for (i = 0; i < category.length; i++) {
       category[i] = category[i].trim();
     }
 
-    let numVal = parseInt(numString);
-
-    if (numVal === NaN) {
-      numVal = 1;
-    } else if (numVal < min) {
-      numVal = 1;
-    } else if (numVal > max) {
-      numVal = 10;
+    if (num === NaN) {
+      num = 1;
+    } else if (num < min) {
+      num = 1;
+    } else if (num > max) {
+      num = 10;
     }
-
-    const num = numVal;
 
     /**
      * More fields for image processing
@@ -157,12 +161,9 @@ module.exports = {
     let images = [];
     let imageNames = await getRandomImages(num, category, isNsfw);
 
-    console.log(imageNames);
-
     /**
      * Default embed for if the requested category does not exist
     */
-
     if (num == 0) {
       const embed = new EmbedBuilder()
         .setTitle(`Error: please input an integer value from 1 to 10`)

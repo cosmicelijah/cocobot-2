@@ -1,5 +1,12 @@
-const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
+/**
+ * Help command
+ * 
+ * Displays information on a given command
+ * 
+ * @param `command`: name of the command given as a string
+ */
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('help')
@@ -16,14 +23,14 @@ module.exports = {
         .setRequired(false)
     ),
   async execute(interaction) {
-    const commandName = interaction.options.getString('command') ?? '';
+    const commandName = interaction.options.getString('command');
 
     console.log(commandName);
 
     const embed = new EmbedBuilder();
 
     switch (commandName) {
-      case '':
+      case null || 'help':
         embed
           .setTitle('Help')
           .setDescription('Synopsis: provides information on a particualr command\n\nArguments:')
@@ -51,7 +58,7 @@ module.exports = {
             { name: 'category\n(optional; default=coconut)', value: 'Category of images to retrieve from the database. Select multiple as a string of comma seperated values.', inline: true },
             { name: 'number\n(optional; default=1; max=4)', value: 'Number of images to retrieve from the database', inline: true },
             { name: 'nsfw\n(optional; default=false)', value: 'If the images should include not safe for work content (sill includes sfw images if set to true)', inline: true },
-            { name: 'hidden\n(optional; default=coconut)', value: 'If the post should be ephemeral (only visible to you, the sender)', inline: true },
+            { name: 'hidden\n(optional; default=false)', value: 'If the post should be ephemeral (only visible to you, the sender)', inline: true },
 
             { name: 'Examples', value: '`/image`\n`/image category:coconut`\n`/image category:coconut,azuki`\n`/image number:4`\n`/image nsfw:True`\n`/image hidden:True`\n`/image category:maple number:4 nsfw:True hidden:True`' },
           )

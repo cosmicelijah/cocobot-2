@@ -108,6 +108,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     const embed = new EmbedBuilder()
       .setTitle("Uh oh! An error occured :(")
+      .setURL("https://github.com/cosmicelijah/cocobot-2/issues")
       .setColor(0xFF0000)
       .setDescription(`Please report this in the GitHub repo at with the command and options used.\n\n\`\`\`js\n${commandUsed}\`\`\``);
 
