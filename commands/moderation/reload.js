@@ -19,7 +19,7 @@ module.exports = {
       .setImage('attachment://mad.png')
       .setFooter({ text: "Just kidding, I still love you <3" });
 
-      await interaction.reply({embeds: [incorrectUserEmbed], files: [madImage]});
+      await interaction.reply({ embeds: [incorrectUserEmbed], files: [madImage], ephemeral: true });
       return;
     }
 
@@ -39,7 +39,7 @@ module.exports = {
       interaction.client.commands.delete(command.data.name);
       const newCommand = require(`${commandPath}`);
       interaction.client.commands.set(newCommand.data.name, newCommand);
-      await interaction.reply(`Command \`${newCommand.data.name}\` was reloaded!`);
+      await interaction.reply({ content: `Command \`${newCommand.data.name}\` was reloaded!`, ephemeral: true });
     } catch (error) {
       console.error(error);
       await interaction.reply(`\`\`\`js\n${error.message}\`\`\``);

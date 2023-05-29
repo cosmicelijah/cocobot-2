@@ -3,46 +3,90 @@ const axios = require('axios');
 const xml2js = require('xml2js');
 const { apiKey, userId } = require('../../config.json');
 
-const _gelbooruData = function (result) {
-  const count = parseInt(result.posts['$'].count);
-  const posts = result.posts;
+const funcMap = {
+  _konachancomData(result) {
+    const count = parseInt(result.posts['$'].count);
+    const posts = result.posts;
 
-  let numResults = count;
+    let numResults = count;
 
-  if (count == 0) {
-    return [0, '', ''];
-  }
+    if (count == 0) {
+      return [0, '', ''];
+    }
 
-  if (numResults > 100) {
-    numResults = 100;
-  }
-  
-  const numToGet = Math.floor(Math.random() * numResults);
-  const image = posts.post[numToGet];
+    if (numResults > posts.post.length) {
+      numResults = posts.post.length;
+    }
+    
+    const numToGet = Math.floor(Math.random() * numResults);
+    const image = posts.post[numToGet]['$'];
 
-  // [count, imageId, imageTags, imageUrl]
-  return [count, image.id[0], image.tags[0], image.file_url[0]];
-}
+    // [(query), (image)]
+    return [count, image.id, image.tags, image.file_url];
+  },
 
-const _rule34Data = function(result) {
-  const count = parseInt(result.posts['$'].count);
-  const posts = result.posts;
+  _konachannetData(result) {
+    const count = parseInt(result.posts['$'].count);
+    const posts = result.posts;
 
-  let numResults = count;
+    let numResults = count;
 
-  if (count == 0) {
-    return [0, '', ''];
-  }
+    if (count == 0) {
+      return [0, '', ''];
+    }
 
-  if (numResults > 100) {
-    numResults = 100;
-  }
-  
-  const numToGet = Math.floor(Math.random() * numResults);
-  const image = posts.post[numToGet]['$'];
+    if (numResults > posts.post.length) {
+      numResults = posts.post.length;
+    }
+    
+    const numToGet = Math.floor(Math.random() * numResults);
+    const image = posts.post[numToGet]['$'];
 
-  // [(query), (image)]
-  return [count, image.id, image.tags, image.file_url];
+    // [(query), (image)]
+    return [count, image.id, image.tags, image.file_url];
+  },
+
+  _gelbooruData(result) {
+    const count = parseInt(result.posts['$'].count);
+    const posts = result.posts;
+
+    let numResults = count;
+
+    if (count == 0) {
+      return [0, '', ''];
+    }
+
+    if (numResults > posts.post.length) {
+      numResults = posts.post.length;
+    }
+    
+    const numToGet = Math.floor(Math.random() * numResults);
+    const image = posts.post[numToGet];
+
+    // [count, imageId, imageTags, imageUrl]
+    return [count, image.id[0], image.tags[0], image.file_url[0]];
+  },
+
+  _rule34Data(result) {
+    const count = parseInt(result.posts['$'].count);
+    const posts = result.posts;
+
+    let numResults = count;
+
+    if (count == 0) {
+      return [0, '', ''];
+    }
+
+    if (numResults > posts.post.length) {
+      numResults = posts.post.length;
+    }
+    
+    const numToGet = Math.floor(Math.random() * numResults);
+    const image = posts.post[numToGet]['$'];
+
+    // [(query), (image)]
+    return [count, image.id, image.tags, image.file_url];
+  },
 }
 
 /**
@@ -52,7 +96,7 @@ const _rule34Data = function(result) {
  * @param {EmbedBuilder} embed EmbedBuilder passthrough
  */
 async function getImage(url, tags, source, username, embed) {
-  url += `&tags=${tags}`
+  url += `tags=${tags}`
 
   console.log(url);
   
@@ -64,20 +108,12 @@ async function getImage(url, tags, source, username, embed) {
     responseType: "xml"
   })
 
+  
   xml2js.parseString(response.data, (err, result) => {
     if (err) {
       throw err;
     } else {
-      let data;
-
-      switch (source) {
-        case 'gelbooru':
-          data = _gelbooruData(result);
-          break;
-        case 'rule34':
-          data = _rule34Data(result);
-          break;
-      }
+      const data = funcMap[`_${source}Data`](result);
 
       // [count, imageId, imageTags, imageUrl]
       const count = data[0];
@@ -105,7 +141,12 @@ async function getImage(url, tags, source, username, embed) {
  * @param {EmbedBuilder} embed EmbedBuilder passthrough
  */
 async function getTags(url, id, source, username, embed) {
-  url += `&id=${id}`;
+  if (source === 'konachancom' || source === 'konachancom') {
+    url += `tags=id:${id}`;
+  } else {
+    url += `id=${id}`;
+  }
+
   
   console.log(`User: ${username} requested\n\tid: ${id}\n\tsource: ${source}`);
   
@@ -119,16 +160,7 @@ async function getTags(url, id, source, username, embed) {
     if (err) {
       throw err;
     } else {
-      let data;
-
-      switch (source) {
-        case 'gelbooru':
-          data = _gelbooruData(result);
-          break;
-        case 'rule34':
-          data = _rule34Data(result);
-          break;
-      }
+      const data = funcMap[`_${source}Data`](result);
 
       // [count, imageId, imageTags, imageUrl]
       const count = data[0];
@@ -155,7 +187,7 @@ async function getTags(url, id, source, username, embed) {
  * @param {EmbedBuilder} embed EmbedBuilder passthrough
  */
 async function queryTags(url, tags, source, username, embed) {
-  url += `&tags=${tags}`;
+  url += `tags=${tags}`;
   
   console.log(`User: ${username} queried\n\ttags: ${tags}`);
   
@@ -169,16 +201,7 @@ async function queryTags(url, tags, source, username, embed) {
     if (err) {
       throw err;
     } else {
-      let data;
-
-      switch (source) {
-        case 'gelbooru':
-          data = _gelbooruData(result);
-          break;
-        case 'rule34':
-          data = _rule34Data(result);
-          break;
-      }
+      const data = funcMap[`_${source}Data`](result);
 
       // [count, imageId, imageTags, imageUrl]
       const count = data[0];
@@ -219,6 +242,8 @@ module.exports = {
               .setChoices(
                 { name: 'Gelbooru', value: 'gelbooru' },
                 { name: 'Rule34', value: 'rule34' },
+                { name: 'Konachan.com', value: 'konachancom' },
+                { name: 'Konachan.net', value: 'konachannet' },
               )
             )
         ).addSubcommand(subcommand =>
@@ -238,6 +263,8 @@ module.exports = {
               .setChoices(
                 { name: 'Gelbooru', value: 'gelbooru' },
                 { name: 'Rule34', value: 'rule34' },
+                { name: 'Konachan.com', value: 'konachancom' },
+                { name: 'Konachan.net', value: 'konachannet' },
               )
             )
         )
@@ -258,6 +285,8 @@ module.exports = {
           .setChoices(
             { name: 'Gelbooru', value: 'gelbooru' },
             { name: 'Rule34', value: 'rule34' },
+            { name: 'Konachan.com', value: 'konachancom' },
+            { name: 'Konachan.net', value: 'konachannet' },
           )
         )
     ),
@@ -268,19 +297,30 @@ module.exports = {
 
     const command = interaction.options.getSubcommand();
 
-    const source = interaction.options.getString('source') ?? 'gelbooru';
+    let source = interaction.options.getString('source');
     const tags = interaction.options.getString('tags');
     const id = interaction.options.getInteger('id');
     const username = interaction.user.username;
+    const sources = ['gelbooru', 'rule34', 'konachannet', 'konachancom'];
+
+    if (source == null) {
+      source = sources[Math.floor(Math.random() * sources.length)];
+    }
 
     let url;
 
     switch (source) {
       case 'gelbooru':
-        url = `https://gelbooru.com/index.php?api_key=${apiKey}&user_id=${userId}&page=dapi&s=post&q=index`;
+        url = `https://gelbooru.com/index.php?api_key=${apiKey}&user_id=${userId}&page=dapi&s=post&q=index&`;
         break;
       case 'rule34':
-        url = `https://api.rule34.xxx/index.php?page=dapi&s=post&q=index`;
+        url = `https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&`;
+        break;
+      case 'konachancom':
+        url = `https://konachan.com/post.xml?`;
+        break;
+      case 'konachannet':
+        url = `https://konachan.net/post.xml?`;
         break;
     }
 

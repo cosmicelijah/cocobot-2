@@ -21,6 +21,7 @@ const client = new Client({
 client.commands = new Collection();
 client.commandPaths = new Map();
 client.cooldowns = new Collection();
+// client.queues = new Map();
 
 /**
  * Command Handler
