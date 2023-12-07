@@ -127,6 +127,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 })
 
+client.on(Events.MessageCreate, (message) => {
+  if (message.author.bot) return;
+
+  const contents = message.toString();
+  if (contents.includes("https://twitter.com")) {
+    message.reply(`It looks like you posted a Twitter link\n${contents.replace("twitter.com", "fxtwitter.com")}`);
+  } else if (contents.includes("https://x.com")) {
+    message.reply(`It looks like you posted a Twitter link\n${contents.replace("x.com", "fxtwitter.com")}`);
+  }
+});
+
 /**
  * Log In
  */

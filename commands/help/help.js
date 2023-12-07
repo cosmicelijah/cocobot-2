@@ -30,10 +30,11 @@ module.exports = {
     const embed = new EmbedBuilder();
 
     switch (commandName) {
-      case null || 'help':
+      case 'help':
+      case null:
         embed
           .setTitle('Help')
-          .setDescription('Synopsis: provides information on a particualr command\n\nArguments:')
+          .setDescription('Synopsis: provides information on a particular command\n\nArguments:')
           .addFields(
             { name: 'command (optional)', value: 'Name of the command to request help on.', inline: true },
 

@@ -11,6 +11,7 @@
     "imagemin": "^8.0.1",
     "imagemin-mozjpeg": "^10.0.0",
     "imagemin-pngquant": "^9.0.2",
+    "kazagumo": "^2.3.2",
     "libsodium-wrappers": "^0.7.11",
     "mysql2": "^3.2.4",
     "nodemon": "^2.0.22",

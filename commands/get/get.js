@@ -304,7 +304,7 @@ module.exports = {
     const sources = ['gelbooru', 'rule34', 'konachannet', 'konachancom'];
 
     if (source == null) {
-      source = sources[Math.floor(Math.random() * sources.length)];
+      source = 'gelbooru';
     }
 
     let url;

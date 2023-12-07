@@ -5,6 +5,6 @@ module.exports = {
             .setName('ping')
             .setDescription('Replies with pong'),
   async execute(interaction) {
-    await interaction.reply('ping');
+    await interaction.reply(`Latency is ${Date.now() - interaction.createdTimestamp}ms.\nAPI Latency is ${Math.round(interaction.client.ws.ping)}ms.\nAlso, pong, I guess.`);
   },
 }

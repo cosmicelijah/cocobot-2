@@ -1,8 +1,6 @@
 const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder } = require('discord.js');
 const { createAudioResource, createAudioPlayer, getVoiceConnection, joinVoiceChannel } = require('@discordjs/voice');
-const ytdl = require('ytdl-core-discord');
-
-
+const kazagumo = require('kazagumo');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -22,8 +20,7 @@ module.exports = {
 
     const url = interaction.options.getString('url');
     const guildId = interaction.guild.id;
-    let queue = interaction.guild.queue;
-    let player = interaction.guild.player;
+    let player = this.player.players.get(guildId).shokaku;
     
     let conn = getVoiceConnection(guildId);
     
@@ -31,7 +28,7 @@ module.exports = {
       interaction.reply({ content: 'I am not connected to a voice channel', ephemeral: true });
     }
 
-    
+
 
     const stream = await ytdl(url, { filter: 'audio' });
     const name = await ytdl.getBasicInfo(url);
